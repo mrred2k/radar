@@ -1,11 +1,20 @@
 # These substitutions allow the end user to override certain values
 substitutions:
-  devicename: radar-test
+  devicename: radar-test-v2
   upper_devicename: radar_test
 
 esphome:
   name: $devicename
-  friendly_name: $upper_devicename
+  #friendly_name: $upper_devicename
+  # Automatically add the mac address to the name
+  # so you can use a single firmware for all devices
+  # name_add_mac_suffix: true
+    # This will allow for (future) project identification,
+  # configuration and updates.
+  project:
+    name: intail.radar-module
+    version: "2.0"
+  
 
 esp8266:
   board: d1_mini
@@ -18,26 +27,38 @@ logger:
 # Enable Home Assistant API
 api:
   encryption:
-    key: "apiPW" # Change to your device
+    key: "apiPW"
 
+# Activate the web server # version: 1 or 2
 web_server:
   port: 80
-  #version: 1
+#  version: 1 # or 2
+
+# This is the public github repository (this) where the config is pulled from
+dashboard_import:
+  package_import_url: github://mrred2k/radar/blob/main/radar-test.yaml@main
+  #Imports the whole config from git not only a basic one
+  import_full_config: true # or false 
+
 
 ota:
-  password: "otaPW" # Change to your device if necessary
-
+  password: "otaPW"
 
 wifi:
-  ssid: !secret wifi_ssid # Has to be set up in the secrets.yaml
-  password: !secret wifi_password # Has to be set up in the secrets.yaml
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
   ap:
-    ssid: "Radar-Test Fallback Hotspot"
+    ssid: "Radar Fallback Hotspot"
     password: "12345678"
 
 captive_portal:
+
+
+##_____________Hardware Configuration____________##
+
+ld2410:
 
 uart:
   # id: uart1 # not necessary to name
@@ -47,29 +68,65 @@ uart:
   parity: NONE
   stop_bits: 1
 
-ld2410:
-  timeout: 30s
-  max_move_distance : 3m
-  max_still_distance: 3m
 
 sensor:
   - platform: ld2410
     moving_distance:
-      name : $devicename Moving Distance
+      name : ${devicename} Moving Distance
     still_distance:
-      name: $devicename Still Distance
+      name: ${devicename} Still Distance
     moving_energy:
-      name: $devicename Move Energy
+      name: ${devicename} Move Energy
     still_energy:
-      name: $devicename Still Energy
+      name: ${devicename} Still Energy
     detection_distance:
-      name: $devicename Detection Distance
+      name: ${devicename} Detection Distance
+# Uptime Sensor
+  - platform: uptime
+    name:  ${devicename} Uptime
+# Wifi Signal Sensor
+  - platform: wifi_signal
+    name: ${devicename} WiFi Signal
+    update_interval: 120s
+
+number:
+  - platform: ld2410
+    timeout:
+      name: ${devicename} timeout
+    light_threshold:
+      name: ${devicename} light threshold
+    max_move_distance_gate:
+      name: ${devicename} max move distance gate
+    max_still_distance_gate:
+      name: ${devicename} max still distance gate
 
 binary_sensor:
   - platform: ld2410
     has_target:
-      name: $devicename Presence
+      name: ${devicename} Presence
     has_moving_target:
-      name: $devicename Moving Target
+      name: ${devicename} Moving Target
     has_still_target:
-      name: $devicename Still Target
+      name: ${devicename} Still Target
+
+
+button:
+  - platform: restart
+    name: ${devicename}_restart
+  - platform: factory_reset
+    name: ${devicename} Reset to Factory
+  - platform: ld2410
+    factory_reset:
+      name: ${devicename} factory reset
+    restart:
+      name: ${devicename} restart
+    query_params:
+      name: ${devicename} query params  
+
+light:
+#LED as a homeasstant connection indicator and dual porpuse switch 
+  - platform: status_led
+    name: ${devicename} Status Led
+    pin:
+      number: GPIO2 #Onboard LED Pin
+      inverted: true   
